@@ -1,0 +1,30 @@
+[project]
+name = "postura-ai-engine"
+version = "0.1.0"
+description = "Postura AI explain engine — Gemini prompt templates, strict schema validation, fallback copy, shared explanation cache interface. The only place an LLM touches the system."
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.9.0",
+    "httpx>=0.27.0",
+    "jinja2>=3.1.4",
+    "postura-scanner",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+
+[tool.setuptools.packages.find]
+include = ["ai_engine*"]
+
+[tool.setuptools.package-data]
+ai_engine = ["prompts/*.txt"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"

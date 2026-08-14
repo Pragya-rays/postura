@@ -1,0 +1,49 @@
+[project]
+name = "postura-backend"
+version = "0.1.0"
+description = "Postura FastAPI backend — auth, domains, scans, findings, billing-free MVP"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "sqlalchemy[asyncio]>=2.0.35",
+    "asyncpg>=0.29.0",
+    "alembic>=1.13.2",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.5.0",
+    "email-validator>=2.2.0",
+    "pyjwt>=2.9.0",
+    "argon2-cffi>=23.1.0",
+    "httpx>=0.27.0",
+    "python-dotenv>=1.0.1",
+    "postura-scanner",
+    "postura-ai-engine",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "respx>=0.21.1",
+]
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+# Matches the session-scoped `_engine` fixture in tests/conftest.py — the
+# pytest-asyncio default (a fresh event loop per test function) makes a
+# session-scoped async engine straddle multiple event loops, producing
+# "attached to a different loop" / "Event loop is closed" errors once a
+# connection created in one test's loop is touched from another's.
+asyncio_default_fixture_loop_scope = "session"
+# A separate setting from the one above — pytest-asyncio 1.x scopes the
+# fixture loop and the *test function's own* loop independently. Both must
+# be "session" so test coroutines and the session-scoped `_engine` fixture
+# always run on the same event loop.
+asyncio_default_test_loop_scope = "session"

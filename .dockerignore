@@ -1,0 +1,19 @@
+# Keeps the build context small and stops host-platform artifacts (Windows
+# node_modules, compiled .next output) from leaking into Linux containers.
+
+**/node_modules
+**/.next
+frontend/tsconfig.tsbuildinfo
+
+**/__pycache__
+**/*.py[cod]
+**/*.egg-info
+**/.eggs
+**/.venv
+**/venv
+**/.pytest_cache
+**/.mypy_cache
+**/.ruff_cache
+
+.git
+docker/postgres-data

@@ -1,0 +1,75 @@
+# One-command local stack: `docker compose up` from this directory (or
+# `docker compose -f docker/docker-compose.yml up` from the repo root).
+#
+# Build contexts are the repo root (`..`) so backend/, ai-engine/, and
+# scanner/ — three separate local Python packages backend/pyproject.toml
+# depends on by name — are all visible to the backend build. See
+# docker/backend.Dockerfile for how they're assembled into one image.
+#
+# Every backend env var has a working default for this exact compose
+# network baked into app/config.py — the only thing overridden below is
+# DATABASE_URL (the Settings default points at localhost, not the
+# `postgres` service). GEMINI_API_KEY is optional: without it, Explain
+# falls back to the hardcoded copy in ai-engine/ai_engine/fallback.py, so
+# the stack is fully usable with zero secrets configured.
+#
+# To set GEMINI_API_KEY (or override anything else) without editing this
+# file, copy docker/.env.example to docker/.env — docker compose loads it
+# automatically.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postura
+      POSTGRES_PASSWORD: postura
+      POSTGRES_DB: postura
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postura"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/backend.Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postura:postura@postgres:5432/postura
+      COOKIE_SECURE: "false" # local http, not https — see backend/.env.example
+      # Must match wherever the frontend container's port is published to
+      # the host (see FRONTEND_PORT below) — this is checked against the
+      # browser's Origin header, not the Docker network.
+      CORS_ORIGINS: http://localhost:${FRONTEND_PORT:-3000}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-insecure-secret-change-me}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
+      ALLOWED_SCAN_TARGETS: ${ALLOWED_SCAN_TARGETS:-}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        # Baked in at build time (Next.js inlines NEXT_PUBLIC_* into the
+        # client bundle) — must be reachable from the BROWSER, so this is
+        # the host's published port, not the in-network service name.
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+    restart: unless-stopped
+    ports:
+      # Override via docker/.env (FRONTEND_PORT=...) if 3000 is already
+      # taken on your host — CORS_ORIGINS above tracks this automatically.
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      - backend

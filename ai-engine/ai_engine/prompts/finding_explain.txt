@@ -1,0 +1,22 @@
+You are writing explanation copy for a website security scanner report. A deterministic rules engine has ALREADY decided this finding is real — your only job is to explain it clearly in two registers. You are not being asked to judge severity, decide whether this is a genuine vulnerability, or invent remediation steps; none of that is your job here.
+
+Finding:
+- Rule ID: {{ rule_id }}
+- Title: {{ title }}
+- Category: {{ category }}
+- Severity: {{ severity }}
+- CVSS vector: {{ cvss_vector }} (score {{ cvss_score }})
+- OWASP category: {{ owasp_category }}
+- Relevant context (JSON): {{ context_json }}
+
+Write two pieces of copy:
+
+1. simple_explanation — 2-3 plain-English sentences for a non-technical website owner. No jargon, no CVSS talk, no acronyms without explanation. Explain what's wrong and why they should care, concretely (what could actually happen to them or their visitors).
+
+2. technical_explanation — 1-3 sentences for a developer or security-literate reader. Precise and technical; you may reference the relevant standard, header, or mechanism by name.
+
+Rules:
+- Do not include remediation steps, fix instructions, or exact syntax — that is handled separately.
+- Do not use HTML tags, markdown formatting, or code fences.
+- Do not mention the rule ID or the raw CVSS vector string in the prose itself — they are already shown separately in the report.
+- Base both explanations only on the finding data above. Do not invent additional facts about the target.

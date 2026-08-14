@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background:
+    radial-gradient(circle at top, rgba(100, 99, 99, 0.08), transparent 42%),
+    linear-gradient(180deg, #0c0c0c 0%, #161616 100%);
+  color: #dfdfdf;
+}
+
+::selection {
+  background-color: rgba(100, 99, 99, 0.28);
+  color: #dfdfdf;
+}
+
+.bg-grid {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 72px 72px;
+}
+
+/* Subtle square grid used across the reference-style dark sections. */
+.bg-grid-dark {
+  background-image: linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 72px 72px;
+}
+
+.bg-stripe-band {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0px,
+    rgba(255, 255, 255, 0.08) 1px,
+    transparent 1px,
+    transparent 10px
+  );
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.font-feature-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes dash-progress {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 28px 0;
+  }
+}
+
+.animate-scan-stripe {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.08) 0px,
+    rgba(255, 255, 255, 0.08) 6px,
+    transparent 6px,
+    transparent 14px
+  );
+  animation: dash-progress 1s linear infinite;
+}
+
+/* Subtle animated border ring used on hero call-to-action elements. */
+@keyframes glow-rotate {
+  to {
+    --glow-angle: 360deg;
+  }
+}
+
+@property --glow-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.glow-ring {
+  position: relative;
+  isolation: isolate;
+}
+
+.glow-ring::before {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  z-index: -1;
+  background: conic-gradient(
+    from var(--glow-angle, 0deg),
+    rgba(255, 255, 255, 0.15),
+    rgba(255, 255, 255, 0.4),
+    rgba(255, 255, 255, 0.15),
+    rgba(255, 255, 255, 0.15)
+  );
+  animation: glow-rotate 4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-ring::before {
+    animation: none;
+  }
+}

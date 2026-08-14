@@ -1,0 +1,37 @@
+"""Backend-only workflow enums (DB/API states). Domain-level Severity/Grade/
+ScanTier live in scanner.enums since Judge produces them and scanner must
+stay backend-independent — re-exported here so `app.models.enums` is the one
+place backend code imports any enum from.
+"""
+from enum import Enum
+
+from scanner.enums import Grade, Severity, ScanTier  # noqa: F401  (re-export)
+
+
+class ScanStatus(str, Enum):
+    QUEUED = "queued"
+    COLLECTING = "collecting"
+    JUDGING = "judging"
+    EXPLAINING = "explaining"
+    COMPLETE = "complete"
+    FAILED = "failed"
+
+
+class VerificationStatus(str, Enum):
+    UNVERIFIED = "unverified"
+    PENDING = "pending"
+    VERIFIED = "verified"
+
+
+class StageKey(str, Enum):
+    COLLECT = "collect"
+    JUDGE = "judge"
+    EXPLAIN = "explain"
+    PRESENT = "present"
+
+
+class StageStatus(str, Enum):
+    PENDING = "pending"
+    ACTIVE = "active"
+    DONE = "done"
+    ERROR = "error"

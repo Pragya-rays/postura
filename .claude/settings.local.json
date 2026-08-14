@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose *)",
+      "Bash(curl -s http://localhost:8000/healthz)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3001/)",
+      "Bash(cd \"C:\\\\Users\\\\rprag\\\\OneDrive\\\\Desktop\\\\FortifyWeb\")",
+      "Bash(rm -f /tmp/cookies.txt)",
+      "Bash(date +%s)",
+      "Bash(echo \"== register ==\")",
+      "Bash(curl -s -c /tmp/cookies.txt -H 'Content-Type: application/json' -d '{\"email\":\"__TRACKED_VAR__\",\"password\":\"correcthorsebatterystaple\"}' http://localhost:8000/auth/register)"
+    ]
+  }
+}
