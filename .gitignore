@@ -30,6 +30,7 @@ docker/postgres-data/
 Thumbs.db
 .vscode/
 .idea/
+.claude/
 
 # --- Postura ---
 scan_debug_output/
