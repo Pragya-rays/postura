@@ -50,6 +50,29 @@ MISSING_HEADERS = {
     "cspHasFrameAncestors": False,
 }
 
+HTTPS_ENFORCED = {
+    "httpReachable": True,
+    "httpStatus": 301,
+    "redirectsToHttps": True,
+    "redirectLocation": "https://clean.example/",
+    "httpsReachable": True,
+    "httpsStatus": 200,
+}
+
+HTTPS_NOT_ENFORCED = {
+    "httpReachable": True,
+    "httpStatus": 200,
+    "redirectsToHttps": False,
+    "redirectLocation": None,
+    "httpsReachable": True,
+    "httpsStatus": 200,
+}
+
+HTTP_NOT_LISTENING = {
+    "httpReachable": False,
+    "error": "connection refused",
+}
+
 
 @pytest.mark.parametrize(
     "rule_id,collectors,should_fire",
@@ -66,6 +89,17 @@ MISSING_HEADERS = {
             {"security_headers": {**MISSING_HEADERS, "cspHasFrameAncestors": True}},
             False,
         ),
+        ("hdr.xcto.missing", {"security_headers": MISSING_HEADERS}, True),
+        ("hdr.xcto.missing", {"security_headers": CLEAN_HEADERS}, False),
+        ("hdr.referrer.missing", {"security_headers": MISSING_HEADERS}, True),
+        ("hdr.referrer.missing", {"security_headers": CLEAN_HEADERS}, False),
+        ("hdr.permissions.missing", {"security_headers": MISSING_HEADERS}, True),
+        ("hdr.permissions.missing", {"security_headers": CLEAN_HEADERS}, False),
+        ("tls.https.not_enforced", {"https_redirect": HTTPS_NOT_ENFORCED}, True),
+        ("tls.https.not_enforced", {"https_redirect": HTTPS_ENFORCED}, False),
+        # No plain-HTTP listener at all — nothing to downgrade from, so this
+        # must not fire even though redirectsToHttps is falsy.
+        ("tls.https.not_enforced", {"https_redirect": HTTP_NOT_LISTENING}, False),
         (
             "cookie.session.flags",
             {"cookies": {"cookies": [{"name": "session_id", "secure": False, "httpOnly": True, "sameSite": "None"}]}},

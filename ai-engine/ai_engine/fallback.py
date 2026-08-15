@@ -110,6 +110,56 @@ FALLBACK: dict[str, ExplanationOutput] = {
             "response, exposing the contents of that directory to any visitor."
         ),
     ),
+    "hdr.xcto.missing": ExplanationOutput(
+        simple_explanation=(
+            "Your site doesn't stop browsers from guessing file types on their own. That sounds "
+            "harmless, but it's one of the tricks attackers use to get an uploaded file treated as "
+            "a script instead of the harmless file type it was labeled as."
+        ),
+        technical_explanation=(
+            "No X-Content-Type-Options header was observed on the root document. Without `nosniff`, "
+            "browsers may MIME-sniff response bodies and execute content whose declared Content-Type "
+            "says otherwise, widening the impact of any endpoint that reflects user-controlled data."
+        ),
+    ),
+    "hdr.referrer.missing": ExplanationOutput(
+        simple_explanation=(
+            "When someone clicks a link on your site, their browser's default behavior decides how "
+            "much of your page's URL gets shared with whatever site they land on. Without a policy "
+            "set, you're relying on that default instead of choosing it deliberately."
+        ),
+        technical_explanation=(
+            "No Referrer-Policy header was observed on the root document. Absent an explicit policy, "
+            "referrer behavior falls back to the browser's default, which can leak full URLs "
+            "(including query parameters) to third-party destinations on outbound navigation."
+        ),
+    ),
+    "hdr.permissions.missing": ExplanationOutput(
+        simple_explanation=(
+            "Your site doesn't limit which browser features — camera, microphone, location — pages "
+            "and embedded third-party content are allowed to ask for. It's a low-urgency gap, but "
+            "an easy one to close."
+        ),
+        technical_explanation=(
+            "No Permissions-Policy header was observed on the root document, so no explicit "
+            "allowlist restricts powerful browser APIs for this origin or any framed third-party "
+            "content, beyond each feature's own browser-default policy."
+        ),
+    ),
+    "tls.https.not_enforced": ExplanationOutput(
+        simple_explanation=(
+            "Your site works fine over plain, unencrypted HTTP and never pushes visitors onto the "
+            "secure version automatically. Anyone who types your address without \"https://\", or "
+            "clicks an old http:// link, stays unencrypted — and on an untrusted network, that "
+            "traffic can be read or tampered with."
+        ),
+        technical_explanation=(
+            "A plain-HTTP request to the root document did not receive a redirect to HTTPS. Without "
+            "server-side enforcement, any client that connects over HTTP by default (a typed URL "
+            "with no scheme, an old bookmark or inbound link) completes that request in the clear, "
+            "which is also the precondition SSL-stripping attacks rely on."
+        ),
+    ),
 }
 
 GENERIC_FALLBACK = ExplanationOutput(

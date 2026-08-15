@@ -11,7 +11,11 @@ from scanner.rules import (  # noqa: F401 — imported for registration side eff
     fingerprint_outdated,
     hdr_csp,
     hdr_hsts,
+    hdr_permissions,
+    hdr_referrer,
+    hdr_xcto,
     hdr_xfo,
+    https_enforcement,
     tls_expiry,
 )
 
@@ -23,6 +27,10 @@ __all__ = [
     "fingerprint_outdated",
     "hdr_csp",
     "hdr_hsts",
+    "hdr_permissions",
+    "hdr_referrer",
+    "hdr_xcto",
     "hdr_xfo",
+    "https_enforcement",
     "tls_expiry",
 ]
