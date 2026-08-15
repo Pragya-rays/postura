@@ -16,8 +16,8 @@ const steps = [
   {
     icon: FileCheck2,
     number: "03",
-    title: "Get plain-English fixes",
-    body: "Each finding comes with what it means, why it matters, and the exact configuration line to paste.",
+    title: "Get AI-written, plain-English fixes",
+    body: "Every finding is caught by our deterministic rules engine, then explained in plain English by AI — what it means, why it matters, and the exact configuration line to paste.",
   },
 ];
 

@@ -103,9 +103,11 @@ export default function PricingPage() {
               <p className="mt-2 text-sm text-forest-secondary">
                 Illustrative price — for agencies and multi-site owners.
               </p>
-              <Button variant="on-dark" size="lg" className="mt-6 w-full" disabled>
-                Upgrade to Pro — coming soon
-              </Button>
+              <Link href="/dashboard/billing" className="mt-6">
+                <Button variant="on-dark" size="lg" className="w-full">
+                  Upgrade to Pro
+                </Button>
+              </Link>
               <ul className="mt-8 space-y-3.5 border-t border-forest-line pt-6 text-sm">
                 {rows.map((r) => (
                   <li key={r.label} className="flex items-center justify-between gap-4">
@@ -118,9 +120,9 @@ export default function PricingPage() {
           </div>
 
           <p className="mx-auto mt-8 max-w-xl text-center text-[13px] text-forest-muted">
-            Prices shown are illustrative. Billing will run on Stripe Checkout + the
-            Stripe Billing Portal once live — plan changes are always applied
-            server-side from a verified webhook, never from the browser.
+            Prices shown are illustrative. Billing runs on Stripe Checkout + the
+            Stripe Billing Portal — plan changes are always applied server-side
+            from a verified webhook, never from the browser.
           </p>
         </div>
       </section>

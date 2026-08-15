@@ -159,6 +159,7 @@ async def _run(session: AsyncSession, scan: Scan) -> None:
                 technical_explanation=explanation.technical_explanation,
                 remediation=finding.remediation,
                 from_cache=explanation.from_cache,
+                ai_generated=explanation.ai_generated,
             )
         )
 

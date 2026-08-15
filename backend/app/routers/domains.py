@@ -13,6 +13,7 @@ from app.models.domain import Domain
 from app.models.enums import VerificationStatus
 from app.models.user import User
 from app.schemas.domain import DomainIn, DomainOut, DomainVerifyOut
+from app.security.plan_limits import PlanLimitExceeded, enforce_domain_limit
 from app.security.ssrf import SSRFError, resolve_and_validate
 from app.services.audit import write_audit_log
 from app.services.verification import verify_domain_ownership
@@ -41,6 +42,22 @@ async def add_domain(
 ):
     hostname = body.hostname.strip().lower()
 
+    # Re-adding an already-owned hostname isn't a *new* domain, so it must
+    # never be blocked by (or count against) the plan limit below — checked
+    # first, and cheaply (no network call), for exactly that reason.
+    existing = await db.scalar(select(Domain).where(Domain.user_id == user.id, Domain.hostname == hostname))
+    if existing is not None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Domain already added")
+
+    try:
+        await enforce_domain_limit(db, user=user)
+    except PlanLimitExceeded as exc:
+        await write_audit_log(
+            db, action="domain.limit_reached", user_id=user.id, target=hostname, ip_address=client_ip(request)
+        )
+        await db.commit()
+        raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail=str(exc))
+
     # Server-side SSRF pre-check — the authoritative one.
     # frontend/lib/validate-target.ts's client-side check is a UX nicety
     # only; reject BEFORE any row is created or any network call is made.
@@ -52,10 +69,6 @@ async def add_domain(
         )
         await db.commit()
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
-
-    existing = await db.scalar(select(Domain).where(Domain.user_id == user.id, Domain.hostname == hostname))
-    if existing is not None:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Domain already added")
 
     domain = Domain(
         user_id=user.id,

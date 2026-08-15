@@ -1,10 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { RefreshCw } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Lock, RefreshCw } from "lucide-react";
 import type { Domain, ScanReport } from "@/lib/types";
 import { SEVERITY_ORDER } from "@/lib/types";
+import { getSubscription } from "@/lib/api";
 import { GradeRing } from "./grade-ring";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +31,13 @@ export function ReportView({
   const router = useRouter();
   const [technical, setTechnical] = useState(false);
   const { scan, summary, findings, severityBreakdown } = report;
+
+  // Technical mode (CVSS/OWASP/raw evidence + the technical write-up) is a
+  // Pro feature — the backend already strips those fields for Free-tier
+  // reports (see routers/scans.py get_scan), this just locks the toggle
+  // itself so a Free user isn't left staring at an empty "Technical" view.
+  const subscriptionQuery = useQuery({ queryKey: ["billing"], queryFn: getSubscription });
+  const canViewTechnical = subscriptionQuery.data?.tier === "pro";
 
   const sortedFindings = useMemo(
     () =>
@@ -82,15 +92,27 @@ export function ReportView({
         <div className="flex-1 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-serif text-xl text-ink">All findings ({sortedFindings.length})</h2>
-            <div className="flex items-center gap-3 rounded-full border border-line bg-cream-card px-3.5 py-2">
-              <span className={technical ? "text-[13px] text-ink-muted" : "text-[13px] font-medium text-ink"}>
-                Simple
-              </span>
-              <Switch checked={technical} onCheckedChange={setTechnical} aria-label="Toggle technical detail" />
-              <span className={technical ? "text-[13px] font-medium text-ink" : "text-[13px] text-ink-muted"}>
-                Technical
-              </span>
-            </div>
+            {canViewTechnical ? (
+              <div className="flex items-center gap-3 rounded-full border border-line bg-cream-card px-3.5 py-2">
+                <span className={technical ? "text-[13px] text-ink-muted" : "text-[13px] font-medium text-ink"}>
+                  Simple
+                </span>
+                <Switch checked={technical} onCheckedChange={setTechnical} aria-label="Toggle technical detail" />
+                <span className={technical ? "text-[13px] font-medium text-ink" : "text-[13px] text-ink-muted"}>
+                  Technical
+                </span>
+              </div>
+            ) : (
+              <Link
+                href="/dashboard/billing"
+                title="Upgrade to Pro to unlock Technical mode"
+                className="flex items-center gap-2 rounded-full border border-line bg-cream-card px-3.5 py-2 text-[13px] text-ink-muted transition-colors hover:text-ink"
+              >
+                <span className="font-medium text-ink">Simple</span>
+                <Lock className="h-3.5 w-3.5" />
+                <span>Technical (Pro)</span>
+              </Link>
+            )}
           </div>
 
           <div className="space-y-4">

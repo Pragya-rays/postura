@@ -34,5 +34,6 @@ class Finding(UUIDPkMixin, CreatedAtMixin, Base):
     technical_explanation: Mapped[str] = mapped_column(Text, nullable=False)
     remediation: Mapped[list[str]] = mapped_column(JSONB, nullable=False)
     from_cache: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    ai_generated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
     scan: Mapped["Scan"] = relationship(back_populates="findings")  # noqa: F821

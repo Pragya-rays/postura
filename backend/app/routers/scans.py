@@ -8,15 +8,17 @@ from sqlalchemy.orm import selectinload
 from app.db import async_session_factory, get_db
 from app.deps import client_ip, get_current_user
 from app.models.domain import Domain
-from app.models.enums import ScanStatus, ScanTier, VerificationStatus
+from app.models.enums import PlanTier, ScanStatus, ScanTier, VerificationStatus
 from app.models.finding import Finding
 from app.models.scan import Scan
 from app.models.user import User
 from app.schemas.finding import FindingOut
 from app.schemas.report import ScanReportOut
 from app.schemas.scan import ScanStageOut, ScanSummaryOut, StartScanIn
+from app.security.plan_limits import PlanLimitExceeded, enforce_scan_quota
 from app.security.rate_limit import RateLimitExceeded, enforce_scan_rate_limits
 from app.services.audit import write_audit_log
+from app.services.billing import effective_tier
 from app.services.scan_orchestrator import initial_stages, run_scan_pipeline
 from scanner.enums import SEVERITY_ORDER
 
@@ -63,6 +65,15 @@ async def start_scan(
         await db.commit()
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc))
 
+    try:
+        await enforce_scan_quota(db, user=user)
+    except PlanLimitExceeded as exc:
+        await write_audit_log(
+            db, action="scan.quota_exceeded", user_id=user.id, target=domain.hostname, ip_address=client_ip(request)
+        )
+        await db.commit()
+        raise HTTPException(status_code=status.HTTP_402_PAYMENT_REQUIRED, detail=str(exc))
+
     tier = ScanTier.VERIFIED if domain.verification_status == VerificationStatus.VERIFIED else ScanTier.PUBLIC
 
     # `domain=domain` (not `domain_id=domain.id`) so the relationship is
@@ -102,10 +113,23 @@ async def get_scan(scan_id: uuid.UUID, user: User = Depends(get_current_user), d
     for finding in findings:
         breakdown[finding.severity.value] += 1
 
+    findings_out = [FindingOut.model_validate(f) for f in findings]
+    if await effective_tier(db, user.id) != PlanTier.PRO:
+        # Free tier: Simple explanations only. CVSS/OWASP/raw evidence and
+        # the technical write-up are Pro features — strip them here, at the
+        # read boundary, rather than never computing them, so nothing about
+        # Judge/Explain needs to know about plans.
+        for f in findings_out:
+            f.cvss_vector = None
+            f.cvss_score = None
+            f.owasp_category = None
+            f.evidence = None
+            f.technical_explanation = None
+
     return ScanReportOut(
         scan=ScanSummaryOut.model_validate(scan),
         stages=[ScanStageOut.model_validate(s) for s in scan.stages],
         summary=scan.summary,
-        findings=[FindingOut.model_validate(f) for f in findings],
+        findings=findings_out,
         severity_breakdown=breakdown,
     )

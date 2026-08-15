@@ -21,13 +21,21 @@ class SqlAlchemyExplanationCache:
             select(Explanation).where(Explanation.rule_id == rule_id, Explanation.context_hash == context_hash)
         )
 
-    async def put(self, rule_id: str, context_hash: str, simple_text: str, technical_text: str) -> None:
+    async def put(
+        self, rule_id: str, context_hash: str, simple_text: str, technical_text: str, ai_generated: bool
+    ) -> None:
         stmt = (
             pg_insert(Explanation)
-            .values(rule_id=rule_id, context_hash=context_hash, simple_text=simple_text, technical_text=technical_text)
+            .values(
+                rule_id=rule_id,
+                context_hash=context_hash,
+                simple_text=simple_text,
+                technical_text=technical_text,
+                ai_generated=ai_generated,
+            )
             .on_conflict_do_update(
                 index_elements=[Explanation.rule_id, Explanation.context_hash],
-                set_={"simple_text": simple_text, "technical_text": technical_text},
+                set_={"simple_text": simple_text, "technical_text": technical_text, "ai_generated": ai_generated},
             )
         )
         await self._session.execute(stmt)

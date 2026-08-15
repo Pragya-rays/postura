@@ -1,10 +1,11 @@
 "use client";
 
 import { Suspense, useMemo, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { AlertTriangle, ArrowRight, Globe2, ShieldCheck } from "lucide-react";
-import { addDomain, listDomains, startScan } from "@/lib/api";
+import { AlertTriangle, ArrowRight, Globe2, ShieldCheck, Sparkles } from "lucide-react";
+import { addDomain, ApiError, listDomains, startScan } from "@/lib/api";
 import { validateTarget } from "@/lib/validate-target";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,7 +21,9 @@ function NewScanForm() {
   const domainsQuery = useQuery({ queryKey: ["domains"], queryFn: listDomains });
   const [selectedId, setSelectedId] = useState<string | null>(preselectDomainId);
   const [newHostname, setNewHostname] = useState(prefillHostname);
-  const [error, setError] = useState<string | null>(null);
+  // `upgrade: true` when the backend returned 402 (a Free-tier plan limit) —
+  // rendered as an "upgrade to unlock" prompt instead of a plain error.
+  const [error, setError] = useState<{ message: string; upgrade: boolean } | null>(null);
 
   const selectedDomain = useMemo(
     () => domainsQuery.data?.find((d) => d.id === selectedId) ?? null,
@@ -39,7 +42,7 @@ function NewScanForm() {
       return startScan(domainId);
     },
     onSuccess: (scan) => router.push(`/dashboard/scans/${scan.id}`),
-    onError: (e: Error) => setError(e.message),
+    onError: (e: Error) => setError({ message: e.message, upgrade: e instanceof ApiError && e.status === 402 }),
   });
 
   const tier = selectedDomain?.verificationStatus === "verified" ? "verified" : "public";
@@ -102,10 +105,21 @@ function NewScanForm() {
         </p>
       </div>
 
-      {error && (
+      {error && error.upgrade && (
+        <div className="mt-4 flex items-start gap-3 rounded-lg bg-ink/5 px-3.5 py-3 text-sm text-ink">
+          <Sparkles className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p>{error.message}</p>
+            <Link href="/dashboard/billing" className="mt-1 inline-block font-medium underline">
+              Upgrade to Pro
+            </Link>
+          </div>
+        </div>
+      )}
+      {error && !error.upgrade && (
         <div className="mt-4 flex items-center gap-2 rounded-lg bg-status-critical/10 px-3.5 py-2.5 text-sm text-status-critical">
           <AlertTriangle className="h-4 w-4 shrink-0" />
-          {error}
+          {error.message}
         </div>
       )}
 

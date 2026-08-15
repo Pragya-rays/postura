@@ -11,6 +11,17 @@ export type ScanTier = "public" | "verified";
 
 export type VerificationStatus = "unverified" | "pending" | "verified";
 
+export type SubscriptionTier = "free" | "pro";
+
+export type SubscriptionStatus = "incomplete" | "active" | "trialing" | "past_due" | "canceled" | "unpaid";
+
+export interface Subscription {
+  tier: SubscriptionTier;
+  status: SubscriptionStatus | null;
+  currentPeriodEnd?: string;
+  cancelAtPeriodEnd: boolean;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -52,14 +63,17 @@ export interface Finding {
   title: string;
   category: string;
   severity: Severity;
-  cvssVector: string;
-  cvssScore: number;
-  owaspCategory: string;
-  evidence: Record<string, unknown>;
+  // Pro-gated: null on a Free-tier report (see backend/app/routers/scans.py
+  // get_scan) — always present for a Pro account.
+  cvssVector?: string;
+  cvssScore?: number;
+  owaspCategory?: string;
+  evidence?: Record<string, unknown>;
   simpleExplanation: string;
-  technicalExplanation: string;
+  technicalExplanation?: string;
   remediation: string[];
   fromCache: boolean;
+  aiGenerated: boolean;
 }
 
 export interface ScanReport {

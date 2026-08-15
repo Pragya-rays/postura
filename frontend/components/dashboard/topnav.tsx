@@ -10,7 +10,10 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { logout, me } from "@/lib/api";
 
-const links = [{ href: "/dashboard", label: "Domains" }];
+const links = [
+  { href: "/dashboard", label: "Domains" },
+  { href: "/dashboard/billing", label: "Billing" },
+];
 
 export function TopNav() {
   const pathname = usePathname();

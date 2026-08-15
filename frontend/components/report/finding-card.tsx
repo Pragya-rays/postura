@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Wrench } from "lucide-react";
+import { ChevronDown, Sparkles, Wrench } from "lucide-react";
 import type { Finding } from "@/lib/types";
 import { SeverityBadge } from "./severity-badge";
 import { Badge } from "@/components/ui/badge";
@@ -21,16 +21,22 @@ export function FindingCard({ finding, technical }: { finding: Finding; technica
       </div>
 
       <p className="mt-3.5 text-[15px] leading-relaxed text-ink-secondary">
-        {technical ? finding.technicalExplanation : finding.simpleExplanation}
+        {technical && finding.technicalExplanation ? finding.technicalExplanation : finding.simpleExplanation}
       </p>
 
-      {technical && (
+      {finding.aiGenerated && (
+        <p className="mt-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-ink-muted">
+          <Sparkles className="h-3 w-3" />
+          AI-generated explanation{finding.fromCache && " · cached"}
+        </p>
+      )}
+
+      {technical && finding.cvssVector && finding.cvssScore !== undefined && (
         <div className="mt-4 flex flex-wrap gap-2">
           <Badge variant="outline" className="font-feature-tabular">
             {finding.cvssVector} · {finding.cvssScore.toFixed(1)}
           </Badge>
-          <Badge variant="outline">{finding.owaspCategory}</Badge>
-          {finding.fromCache && <Badge variant="outline">Cached explanation</Badge>}
+          {finding.owaspCategory && <Badge variant="outline">{finding.owaspCategory}</Badge>}
         </div>
       )}
 
@@ -57,7 +63,7 @@ export function FindingCard({ finding, technical }: { finding: Finding; technica
             ))}
           </ol>
 
-          {technical && (
+          {technical && finding.evidence && (
             <div className="mt-3 border-t border-line pt-3">
               <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-muted">Evidence</p>
               <pre className="mt-1.5 overflow-x-auto rounded-lg bg-forest p-3 text-[12px] text-forest-ink">

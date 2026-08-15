@@ -46,6 +46,18 @@ class Settings(BaseSettings):
     # --- CORS ---
     cors_origins: str = "http://localhost:3000"
 
+    # --- Billing (Stripe) ---
+    # Empty by default: Checkout/Portal/webhook routes fail closed (clear
+    # error, not a silent no-op) until these are actually configured.
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_price_id_pro: str = ""
+    # Where Checkout/Portal send the browser back to (success/cancel/return
+    # URLs) — the frontend origin, not the API's.
+    frontend_url: str = "http://localhost:3000"
+    free_tier_domain_limit: int = 1
+    free_tier_scans_per_month: int = 5
+
     @property
     def allowed_scan_targets_list(self) -> list[str]:
         return [t.strip().lower() for t in self.allowed_scan_targets.split(",") if t.strip()]

@@ -11,11 +11,15 @@ class FindingOut(CamelModel):
     title: str
     category: str
     severity: Severity
-    cvss_vector: str
-    cvss_score: float
-    owasp_category: str
-    evidence: dict
+    # Pro-gated fields: null for Free-tier users. Always fully populated in
+    # the DB — get_scan() in routers/scans.py masks these on the way out
+    # based on the requesting user's plan, never on write.
+    cvss_vector: str | None
+    cvss_score: float | None
+    owasp_category: str | None
+    evidence: dict | None
     simple_explanation: str
-    technical_explanation: str
+    technical_explanation: str | None
     remediation: list[str]
     from_cache: bool
+    ai_generated: bool

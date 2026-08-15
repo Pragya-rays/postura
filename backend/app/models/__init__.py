@@ -7,6 +7,7 @@ from app.models.explanation import Explanation
 from app.models.finding import Finding
 from app.models.scan import Scan
 from app.models.scan_raw import ScanRaw
+from app.models.subscription import Subscription
 from app.models.user import User
 
-__all__ = ["AuditLog", "Domain", "Explanation", "Finding", "Scan", "ScanRaw", "User"]
+__all__ = ["AuditLog", "Domain", "Explanation", "Finding", "Scan", "ScanRaw", "Subscription", "User"]

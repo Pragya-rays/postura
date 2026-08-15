@@ -20,9 +20,9 @@ export function Hero() {
           </h1>
 
           <p className="mt-4 max-w-xl text-[15px] leading-7 text-ink-secondary sm:text-[16px] sm:leading-8">
-            Postura checks your SSL, security headers, cookies and DNS, then hands you a
-            letter grade and the exact lines to copy and paste. No jargon, no consultant
-            required.
+            Postura checks your SSL, security headers, cookies and DNS, then uses AI to explain
+            each finding in plain English and hands you the exact lines to copy and paste. No
+            jargon, no consultant required.
           </p>
 
           <div className="mt-6 flex flex-wrap items-center gap-2.5 sm:mt-8 sm:gap-3">

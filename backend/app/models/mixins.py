@@ -18,3 +18,13 @@ class CreatedAtMixin:
     # produces an unambiguous ISO string (`...+00:00`) matching what the
     # frontend's `new Date(...)` expects, instead of a naive local timestamp.
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class UpdatedAtMixin:
+    # Same tz-aware rationale as CreatedAtMixin. `onupdate` is DB-side (via
+    # SQLAlchemy's ORM-level onupdate, applied on every UPDATE through this
+    # session) — used by rows that get revised in place over time, e.g. a
+    # Subscription synced from repeated Stripe webhook deliveries.
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
+    )

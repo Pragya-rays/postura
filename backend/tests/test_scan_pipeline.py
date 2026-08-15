@@ -8,7 +8,12 @@ from __future__ import annotations
 import uuid
 
 import pytest
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
+from app.models.enums import SubscriptionStatus
+from app.models.subscription import Subscription
+from app.models.user import User
 from app.security.ssrf import ResolvedTarget
 from scanner.enums import ScanTier
 from scanner.models import CollectorResult, RawBundle
@@ -54,9 +59,29 @@ async def _fake_collect_all(hostname: str, tier, **kwargs) -> RawBundle:
     return _fake_bundle(hostname)
 
 
-async def _register_and_add_domain(client, monkeypatch: pytest.MonkeyPatch, hostname: str) -> str:
+async def _make_pro(_engine, email: str) -> None:
+    """This file tests pipeline mechanics (Collect -> Judge -> Explain ->
+    Present shape), not billing — every test user is put on Pro so none of
+    it is incidentally gated by Free-tier limits (technical explanations
+    being masked, the 5-scans/month cap, etc.)."""
+    session_factory = async_sessionmaker(bind=_engine, expire_on_commit=False)
+    async with session_factory() as session:
+        user = await session.scalar(select(User).where(User.email == email))
+        session.add(
+            Subscription(
+                user_id=user.id,
+                stripe_customer_id=f"cus_test_{uuid.uuid4().hex[:10]}",
+                stripe_subscription_id=f"sub_test_{uuid.uuid4().hex[:10]}",
+                status=SubscriptionStatus.ACTIVE,
+            )
+        )
+        await session.commit()
+
+
+async def _register_and_add_domain(client, monkeypatch: pytest.MonkeyPatch, hostname: str, _engine) -> str:
     email = f"test-{uuid.uuid4().hex[:10]}@example.com"
     await client.post("/auth/register", json={"email": email, "password": "correct-horse-battery-staple"})
+    await _make_pro(_engine, email)
 
     async def _fake_resolve(hostname_: str, *, port: int):
         return [ResolvedTarget(hostname=hostname_, ip="93.184.216.34", port=port)]
@@ -66,13 +91,13 @@ async def _register_and_add_domain(client, monkeypatch: pytest.MonkeyPatch, host
     return resp.json()["id"]
 
 
-async def test_full_pipeline_completes_with_expected_shape(client, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_full_pipeline_completes_with_expected_shape(client, monkeypatch: pytest.MonkeyPatch, _engine) -> None:
     hostname = f"pipeline-test-{uuid.uuid4().hex[:8]}.example"
 
     monkeypatch.setattr("app.services.scan_orchestrator.collect_all", _fake_collect_all)
     monkeypatch.setattr("app.services.scan_orchestrator._gemini_client", lambda: None)
 
-    domain_id = await _register_and_add_domain(client, monkeypatch, hostname)
+    domain_id = await _register_and_add_domain(client, monkeypatch, hostname, _engine)
 
     start_resp = await client.post("/scans", json={"domainId": domain_id})
     assert start_resp.status_code == 201
@@ -98,7 +123,7 @@ async def test_full_pipeline_completes_with_expected_shape(client, monkeypatch: 
     assert ranks == sorted(ranks)
 
 
-async def test_identical_finding_reuses_cache_across_scans(client, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_identical_finding_reuses_cache_across_scans(client, monkeypatch: pytest.MonkeyPatch, _engine) -> None:
     monkeypatch.setattr("app.services.scan_orchestrator.collect_all", _fake_collect_all)
     monkeypatch.setattr("app.services.scan_orchestrator._gemini_client", lambda: None)
 
@@ -109,7 +134,7 @@ async def test_identical_finding_reuses_cache_across_scans(client, monkeypatch: 
     # this test actually proves is order-independent: a SECOND scan with
     # identical underlying evidence always reuses whatever's cached.
     hostname1 = f"cache-test-a-{uuid.uuid4().hex[:8]}.example"
-    domain_id_1 = await _register_and_add_domain(client, monkeypatch, hostname1)
+    domain_id_1 = await _register_and_add_domain(client, monkeypatch, hostname1, _engine)
     scan1 = await client.post("/scans", json={"domainId": domain_id_1})
     report1 = (await client.get(f"/scans/{scan1.json()['id']}")).json()
 
@@ -117,7 +142,7 @@ async def test_identical_finding_reuses_cache_across_scans(client, monkeypatch: 
     # (the fake bundle only varies by hostname via `checkedUrl`, which the
     # cache signature strips as noise) — this must hit the shared cache.
     hostname2 = f"cache-test-b-{uuid.uuid4().hex[:8]}.example"
-    domain_id_2 = await _register_and_add_domain(client, monkeypatch, hostname2)
+    domain_id_2 = await _register_and_add_domain(client, monkeypatch, hostname2, _engine)
     scan2 = await client.post("/scans", json={"domainId": domain_id_2})
     report2 = (await client.get(f"/scans/{scan2.json()['id']}")).json()
     assert all(f["fromCache"] is True for f in report2["findings"])

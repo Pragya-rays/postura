@@ -27,6 +27,12 @@ class ExplainedFinding:
     simple_explanation: str
     technical_explanation: str
     from_cache: bool
+    # True only when this prose actually came out of Gemini at some point —
+    # False for hardcoded fallback copy (ai_engine.fallback), even if that
+    # fallback text is now sitting in the cache. Lets callers (e.g. the
+    # frontend) label output as AI-generated honestly instead of always
+    # claiming it, since a Gemini outage silently swaps in static copy.
+    ai_generated: bool
 
 
 async def explain_finding(
@@ -40,22 +46,26 @@ async def explain_finding(
 
     cached = await cache.get(rule.rule_id, context_hash)
     if cached is not None:
-        return ExplainedFinding(cached.simple_text, cached.technical_text, from_cache=True)
+        return ExplainedFinding(cached.simple_text, cached.technical_text, from_cache=True, ai_generated=cached.ai_generated)
 
-    validated = await _generate(finding, rule, gemini)
+    validated, ai_generated = await _generate(finding, rule, gemini)
 
-    await cache.put(rule.rule_id, context_hash, validated.simple_explanation, validated.technical_explanation)
-    return ExplainedFinding(validated.simple_explanation, validated.technical_explanation, from_cache=False)
+    await cache.put(
+        rule.rule_id, context_hash, validated.simple_explanation, validated.technical_explanation, ai_generated
+    )
+    return ExplainedFinding(
+        validated.simple_explanation, validated.technical_explanation, from_cache=False, ai_generated=ai_generated
+    )
 
 
-async def _generate(finding: EvaluatedFinding, rule: Rule, gemini: GeminiClient | None) -> ExplanationOutput:
+async def _generate(finding: EvaluatedFinding, rule: Rule, gemini: GeminiClient | None) -> tuple[ExplanationOutput, bool]:
     if gemini is None:
-        return FALLBACK.get(rule.rule_id, GENERIC_FALLBACK)
+        return FALLBACK.get(rule.rule_id, GENERIC_FALLBACK), False
 
     try:
         prompt = render_prompt(finding, rule)
         raw = await gemini.generate_json(prompt)
-        return ExplanationOutput.model_validate_json(raw)
+        return ExplanationOutput.model_validate_json(raw), True
     except (GeminiError, ValidationError, ValueError) as exc:
         logger.warning("Gemini explain failed for %s, using fallback: %s", rule.rule_id, exc)
-        return FALLBACK.get(rule.rule_id, GENERIC_FALLBACK)
+        return FALLBACK.get(rule.rule_id, GENERIC_FALLBACK), False

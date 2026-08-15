@@ -1,4 +1,4 @@
-from sqlalchemy import String, Text, UniqueConstraint
+from sqlalchemy import Boolean, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
@@ -26,3 +26,7 @@ class Explanation(UUIDPkMixin, CreatedAtMixin, Base):
     context_hash: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     simple_text: Mapped[str] = mapped_column(Text, nullable=False)
     technical_text: Mapped[str] = mapped_column(Text, nullable=False)
+    # False when simple_text/technical_text are ai_engine.fallback's hardcoded
+    # copy rather than something Gemini actually produced (Gemini was
+    # unavailable, timed out, or returned something that failed validation).
+    ai_generated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

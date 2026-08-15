@@ -109,6 +109,7 @@ const findings: Finding[] = [
       "Submit the domain to the HSTS preload list once you've run it in production for a few weeks.",
     ],
     fromCache: true,
+    aiGenerated: true,
   },
   {
     id: "fnd_2",
@@ -131,6 +132,7 @@ const findings: Finding[] = [
       "Move to enforcing mode once a week of reports shows no unexpected blocks.",
     ],
     fromCache: true,
+    aiGenerated: true,
   },
   {
     id: "fnd_3",
@@ -153,6 +155,7 @@ const findings: Finding[] = [
       "Re-issue existing sessions after the change so old cookies expire.",
     ],
     fromCache: false,
+    aiGenerated: true,
   },
   {
     id: "fnd_4",
@@ -175,6 +178,7 @@ const findings: Finding[] = [
       "Graduate to `p=reject` once legitimate senders are all aligned.",
     ],
     fromCache: true,
+    aiGenerated: true,
   },
   {
     id: "fnd_5",
@@ -197,6 +201,7 @@ const findings: Finding[] = [
       "Renew manually now if automation can't be confirmed before the deadline.",
     ],
     fromCache: true,
+    aiGenerated: true,
   },
   {
     id: "fnd_6",
@@ -218,6 +223,7 @@ const findings: Finding[] = [
       "Add `frame-ancestors 'none'` to your CSP as the modern equivalent.",
     ],
     fromCache: true,
+    aiGenerated: true,
   },
   {
     id: "fnd_7",
@@ -239,6 +245,9 @@ const findings: Finding[] = [
       "Re-run this check after upgrading to confirm the fingerprint clears.",
     ],
     fromCache: true,
+    // Cached copy that was originally generated while Gemini was
+    // unavailable — ai_engine.fallback's static text, not a live AI call.
+    aiGenerated: false,
   },
   {
     id: "fnd_8",
@@ -261,6 +270,7 @@ const findings: Finding[] = [
       "Add a regression test that fails the build if a wildcard + credentials pair reappears.",
     ],
     fromCache: false,
+    aiGenerated: true,
   },
   {
     id: "fnd_9",
@@ -283,6 +293,7 @@ const findings: Finding[] = [
       "Audit whether the exposed archives were already accessed and rotate any credentials they contain.",
     ],
     fromCache: false,
+    aiGenerated: true,
   },
 ];
 

@@ -8,8 +8,10 @@ from fastapi.responses import JSONResponse
 from ai_engine.fallback import check_fallback_coverage
 from app.config import get_settings
 from app.routers import auth as auth_router
+from app.routers import billing as billing_router
 from app.routers import domains as domains_router
 from app.routers import scans as scans_router
+from app.security.plan_limits import PlanLimitExceeded
 from app.security.rate_limit import RateLimitExceeded
 from app.security.ssrf import SSRFError
 from scanner.rules import registry as _rules_registry  # noqa: F401 — import registers every rule
@@ -34,6 +36,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router.router)
+app.include_router(billing_router.router)
 app.include_router(domains_router.router)
 app.include_router(scans_router.router)
 
@@ -56,6 +59,11 @@ async def ssrf_error_handler(request: Request, exc: SSRFError) -> JSONResponse:
 @app.exception_handler(RateLimitExceeded)
 async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
     return JSONResponse(status_code=429, content={"detail": str(exc)})
+
+
+@app.exception_handler(PlanLimitExceeded)
+async def plan_limit_handler(request: Request, exc: PlanLimitExceeded) -> JSONResponse:
+    return JSONResponse(status_code=402, content={"detail": str(exc)})
 
 
 @app.exception_handler(Exception)

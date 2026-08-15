@@ -15,12 +15,15 @@ from scanner.rules.base import Rule
 class CachedExplanation(Protocol):
     simple_text: str
     technical_text: str
+    ai_generated: bool
 
 
 class ExplanationCache(Protocol):
     async def get(self, rule_id: str, context_hash: str) -> CachedExplanation | None: ...
 
-    async def put(self, rule_id: str, context_hash: str, simple_text: str, technical_text: str) -> None: ...
+    async def put(
+        self, rule_id: str, context_hash: str, simple_text: str, technical_text: str, ai_generated: bool
+    ) -> None: ...
 
 
 def compute_context_hash(rule: Rule, evidence: dict) -> str:

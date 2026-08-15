@@ -5,9 +5,21 @@
 // Wire format is camelCase on both sides (backend/app/schemas/base.py's
 // CamelModel), so responses map onto lib/types.ts with no translation.
 
-import type { Domain, ScanReport, ScanSummary, User, VerificationStatus } from "./types";
+import type { Domain, ScanReport, ScanSummary, Subscription, User, VerificationStatus } from "./types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+// Thrown instead of a plain Error so callers can branch on the HTTP status
+// (e.g. 402 Payment Required from a plan-limit response) without parsing
+// the message text — see scans/new/page.tsx's upgrade-prompt handling.
+export class ApiError extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
@@ -27,7 +39,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const body = await res.json().catch(() => null);
   if (!res.ok) {
     const detail = body && typeof body.detail === "string" ? body.detail : res.statusText;
-    throw new Error(detail || "Something went wrong");
+    throw new ApiError(detail || "Something went wrong", res.status);
   }
   return body as T;
 }
@@ -83,4 +95,19 @@ export function startScan(domainId: string): Promise<ScanSummary> {
 // scan.status hasn't reached a terminal state (complete/failed).
 export function getScan(scanId: string): Promise<ScanReport> {
   return apiFetch<ScanReport>(`/scans/${scanId}`);
+}
+
+// GET /billing/subscription
+export function getSubscription(): Promise<Subscription> {
+  return apiFetch<Subscription>("/billing/subscription");
+}
+
+// POST /billing/checkout-session — returns a Stripe Checkout URL to redirect to.
+export function createCheckoutSession(): Promise<{ url: string }> {
+  return apiFetch("/billing/checkout-session", { method: "POST" });
+}
+
+// POST /billing/portal-session — returns a Stripe Billing Portal URL to redirect to.
+export function createPortalSession(): Promise<{ url: string }> {
+  return apiFetch("/billing/portal-session", { method: "POST" });
 }

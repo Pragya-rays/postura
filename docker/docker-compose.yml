@@ -51,6 +51,15 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-flash-latest}
       ALLOWED_SCAN_TARGETS: ${ALLOWED_SCAN_TARGETS:-}
+      # Stripe Checkout/Portal/webhook — empty by default (billing routes
+      # fail closed with a clear error rather than a silent no-op). See
+      # backend/.env.example for how to get test-mode values.
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      STRIPE_PRICE_ID_PRO: ${STRIPE_PRICE_ID_PRO:-}
+      # Where Checkout/Portal send the browser back to — same host:port the
+      # frontend container is actually published on (see FRONTEND_PORT).
+      FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
     ports:
       - "8000:8000"
     depends_on:
