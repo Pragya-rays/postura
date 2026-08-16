@@ -1,0 +1,63 @@
+# Render Blueprint — provisions the backend web service + its Postgres
+# database together. On render.com: New -> Blueprint -> select this repo ->
+# Render finds this file automatically.
+#
+# Build context mirrors docker/docker-compose.yml: the Dockerfile lives in
+# docker/ but the build context is the repo root, since backend/pyproject.toml
+# depends on the sibling scanner/ and ai-engine/ packages by path.
+#
+# Env vars marked `sync: false` are prompted for during Blueprint setup
+# (secrets, or values only known once the frontend is deployed) — nothing
+# secret is stored in this file.
+
+databases:
+  - name: postura-db
+    plan: free
+    databaseName: postura
+    user: postura
+
+services:
+  - type: web
+    name: postura-backend
+    runtime: docker
+    dockerfilePath: ./docker/backend.Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      # Render's connection string is plain postgresql:// — app/config.py
+      # normalizes it to the asyncpg driver automatically, no editing needed.
+      - key: DATABASE_URL
+        fromDatabase:
+          name: postura-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      # Frontend (Vercel) and backend (Render) are different domains, so the
+      # session cookie needs SameSite=None (paired with Secure=true above) —
+      # see backend/app/config.py's cookie_samesite comment for why.
+      - key: COOKIE_SAMESITE
+        value: none
+      # Your Vercel domain, e.g. https://postura.vercel.app — no trailing
+      # slash. Fill in after the Vercel deploy exists.
+      - key: CORS_ORIGINS
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      # Optional — Explain falls back to hardcoded copy without it.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-flash-latest
+      # NEVER set this to anything in production.
+      - key: ALLOWED_SCAN_TARGETS
+        value: ""
+      # Stripe live/test keys + the Pro price ID (see backend/.env.example).
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_ID_PRO
+        sync: false

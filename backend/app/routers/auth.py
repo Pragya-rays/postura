@@ -27,7 +27,7 @@ def _set_session_cookie(response: Response, user_id) -> None:
         value=token,
         httponly=True,
         secure=settings.cookie_secure,
-        samesite="lax",
+        samesite=settings.cookie_samesite,
         max_age=settings.jwt_expire_minutes * 60,
         domain=settings.cookie_domain,
         path="/",
@@ -72,7 +72,15 @@ async def login(body: LoginIn, request: Request, response: Response, db: AsyncSe
 
 @router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
 async def logout(response: Response):
-    response.delete_cookie(key=settings.cookie_name, domain=settings.cookie_domain, path="/")
+    # samesite/secure must match how the cookie was set, or some browsers
+    # won't actually clear it.
+    response.delete_cookie(
+        key=settings.cookie_name,
+        domain=settings.cookie_domain,
+        path="/",
+        samesite=settings.cookie_samesite,
+        secure=settings.cookie_secure,
+    )
 
 
 @router.get("/me", response_model=UserOut)

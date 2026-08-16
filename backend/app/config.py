@@ -4,6 +4,7 @@ except safe, non-secret defaults for local dev.
 """
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,6 +14,20 @@ class Settings(BaseSettings):
     # --- Database ---
     database_url: str = "postgresql+asyncpg://postura:postura@localhost:5432/postura"
 
+    @field_validator("database_url")
+    @classmethod
+    def _use_asyncpg_driver(cls, v: str) -> str:
+        """Managed Postgres providers (Render, Heroku, ...) hand out a plain
+        postgresql:// (or the older postgres://) connection string — the app
+        needs the asyncpg driver in the scheme. Normalizing here means the
+        platform's own DATABASE_URL env var can be wired in directly, no
+        manual editing required."""
+        if v.startswith("postgresql://"):
+            return "postgresql+asyncpg://" + v[len("postgresql://") :]
+        if v.startswith("postgres://"):
+            return "postgresql+asyncpg://" + v[len("postgres://") :]
+        return v
+
     # --- Auth ---
     jwt_secret: str = "dev-only-insecure-secret-change-me"
     jwt_algorithm: str = "HS256"
@@ -20,6 +35,13 @@ class Settings(BaseSettings):
     cookie_name: str = "postura_session"
     cookie_secure: bool = False  # True in prod (HTTPS-only); False for local docker compose over http
     cookie_domain: str | None = None
+    # "lax" works for local dev (frontend/backend are same-site: same host,
+    # different ports). Once frontend and backend are on genuinely different
+    # domains (e.g. a Vercel frontend calling a Render backend), this MUST
+    # be "none" (and cookie_secure MUST be true — browsers reject
+    # SameSite=None without Secure) or the browser silently drops the
+    # session cookie on every cross-site fetch, breaking auth entirely.
+    cookie_samesite: str = "lax"
 
     # --- AI ---
     gemini_api_key: str = ""
